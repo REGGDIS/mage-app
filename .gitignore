@@ -1,0 +1,23 @@
+# Node / backend
+node_modules/
+npm-debug.log*
+yarn-error.log*
+dist/
+coverage/
+
+# Env / secretos
+.env
+.env.*.local
+
+# Editor/OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# REST Client
+*.http
+*.rest
