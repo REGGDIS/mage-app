@@ -3,8 +3,14 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 
 const NavbarApp = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
+
+  // Reglas simples de permisos
+  const canCreateProject =
+    user && (user.roleName === "SuperAdmin" || user.roleName === "Gestor de Riesgos");
+
+  console.log("[NavbarApp] user:", user);
 
   const handleLogout = () => {
     logout();
@@ -32,6 +38,32 @@ const NavbarApp = () => {
 
         <div className="collapse navbar-collapse" id="navbarMageApp">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+            {/* Sólo Gestor/SuperAdmin ven este item */}
+            {canCreateProject && (
+              <li className="nav-item">
+                <NavLink
+                  to="/app/nuevo-proyecto"
+                  className={({ isActive }) =>
+                    "nav-link" + (isActive ? " active" : "")
+                  }
+                >
+                  Nuevo proyecto
+                </NavLink>
+              </li>
+            )}
+
+            {/* 👇 Nuevo: listado de proyectos (lo ven todos los usuarios logueados) */}
+            <li className="nav-item">
+              <NavLink
+                to="/app/proyectos"
+                className={({ isActive }) =>
+                  "nav-link" + (isActive ? " active" : "")
+                }
+              >
+                Proyectos
+              </NavLink>
+            </li>
+
             <li className="nav-item">
               <NavLink
                 to="/app/modelo-valor"

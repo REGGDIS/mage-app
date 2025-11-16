@@ -6,7 +6,7 @@ import { AuthProvider } from "./context/AuthContext.jsx";
 
 // Importar Bootstrap CSS
 import "bootstrap/dist/css/bootstrap.min.css";
-// (Opcional) JS de Bootstrap si quieres dropdowns/colapsables
+// JS de Bootstrap por si hay dropdowns/colapsables
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
