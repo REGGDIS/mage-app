@@ -23,6 +23,30 @@ const ProjectsListPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // --- Reglas de rol ---
+  const isSuperAdmin = user?.roleName === "SuperAdmin";
+  const isGestor = user?.roleName === "Gestor de Riesgos";
+  const isAuditor = user?.roleName === "Auditor";
+
+  const puedeCrear = isSuperAdmin || isGestor;
+
+  // Filtro por rol:
+  // - SuperAdmin y Auditor: ven todos
+  // - Gestor: sólo proyectos donde es responsable + proyectos sin responsable
+  const proyectosFiltrados = React.useMemo(() => {
+    if (!user) return [];
+    if (isSuperAdmin || isAuditor) return proyectos;
+
+    if (isGestor) {
+      return proyectos.filter(
+        (p) => p.responsable_id === user.id || p.responsable_id == null
+      );
+    }
+
+    // Otros roles (por si acaso)
+    return [];
+  }, [proyectos, user, isSuperAdmin, isAuditor, isGestor]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -46,18 +70,24 @@ const ProjectsListPage = () => {
   };
 
   const handleVerAnalisis = (nombreProyecto) => {
-
     const encoded = encodeURIComponent(nombreProyecto);
     navigate(`/app/proyectos/${encoded}`);
   };
 
-  const puedeCrear =
-    user && (user.roleName === "SuperAdmin" || user.roleName === "Gestor de Riesgos");
-
   return (
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h1 className="h3 mb-0">Proyectos de Gestión de Riesgos</h1>
+        <div>
+          <h1 className="h3 mb-0">Proyectos de Gestión de Riesgos</h1>
+          {user && (
+            <small className="text-muted">
+              Vista para: {user.roleName}
+              {isGestor && " (sólo tus proyectos y sin responsable)"}
+              {isSuperAdmin && " (todos los proyectos)"}
+              {isAuditor && " (lectura de todos los proyectos)"}
+            </small>
+          )}
+        </div>
 
         {puedeCrear && (
           <button className="btn btn-primary" onClick={handleNuevoProyecto}>
@@ -67,19 +97,20 @@ const ProjectsListPage = () => {
       </div>
 
       {loading && <p>Cargando proyectos...</p>}
+
       {error && (
         <div className="alert alert-danger" role="alert">
           {error}
         </div>
       )}
 
-      {!loading && !error && proyectos.length === 0 && (
+      {!loading && !error && proyectosFiltrados.length === 0 && (
         <div className="alert alert-info" role="alert">
-          No hay proyectos registrados todavía.
+          No hay proyectos visibles para tu rol todavía.
         </div>
       )}
 
-      {!loading && !error && proyectos.length > 0 && (
+      {!loading && !error && proyectosFiltrados.length > 0 && (
         <div className="table-responsive">
           <table className="table table-striped table-hover align-middle">
             <thead>
@@ -94,7 +125,7 @@ const ProjectsListPage = () => {
               </tr>
             </thead>
             <tbody>
-              {proyectos.map((p) => (
+              {proyectosFiltrados.map((p) => (
                 <tr key={p.id}>
                   <td>{p.id}</td>
                   <td>{p.nombre}</td>

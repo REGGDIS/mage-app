@@ -31,10 +31,14 @@ const emptyMapa = () => ({
 
 const NewProjectPage = () => {
   const { user } = useAuth();
-  const isAllowed =
-    user && (user.roleName === "SuperAdmin" || user.roleName === "Gestor de Riesgos");
 
-  // TODOS los useState VAN AQUÍ
+  const isSuperAdmin = user?.roleName === "SuperAdmin";
+  const isGestor = user?.roleName === "Gestor de Riesgos";
+
+  // Sólo estos roles pueden crear proyectos
+  const isAllowed = isSuperAdmin || isGestor;
+
+  // ==== state ====
   const [proyecto, setProyecto] = useState({
     nombre: "",
     descripcion: "",
@@ -52,7 +56,7 @@ const NewProjectPage = () => {
   const [mensajeOk, setMensajeOk] = useState("");
   const [mensajeError, setMensajeError] = useState("");
 
-  // return condicional
+  // ==== acceso restringido ====
   if (!isAllowed) {
     return (
       <div className="mt-3">
@@ -158,8 +162,14 @@ const NewProjectPage = () => {
         m.vulnerabilidades.trim() !== ""
     );
 
+    // 👉 Aquí inyectamos el responsable_id para la BD
+    const proyectoPayload = {
+      ...proyecto,
+      responsable_id: isGestor ? user.id : null, // SuperAdmin puede reasignar después
+    };
+
     const payload = {
-      proyecto,
+      proyecto: proyectoPayload,
       modeloDeValor: activosValidos,
       matrizDeRiesgo: riesgosValidos,
       mapaDeRiesgos: mapaValidos,
@@ -175,7 +185,6 @@ const NewProjectPage = () => {
           ? `Proyecto guardado correctamente (ID ${id}).`
           : "Proyecto guardado correctamente."
       );
-
     } catch (err) {
       console.error("ERROR crearProyectoCompleto =>", err);
       const apiError = err?.response?.data?.error;
@@ -285,6 +294,10 @@ const NewProjectPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Modelo de Valor CIDAT */}
+        {/* … resto de tu componente tal como lo tienes … */}
+        {/* (activos, riesgos, mapaRiesgos, botón guardar) */}
 
         {/* Modelo de Valor CIDAT */}
         <div className="card mb-4">
