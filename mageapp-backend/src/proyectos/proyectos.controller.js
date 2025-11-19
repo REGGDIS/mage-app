@@ -4,26 +4,34 @@ import { pool } from "../db.js";
 const getNombre = (req) => {
     const raw = req.params.nombre ?? "";
     let s;
-    try { s = decodeURIComponent(raw); }
-    catch { s = raw; }
+    try {
+        s = decodeURIComponent(raw);
+    } catch {
+        s = raw;
+    }
     s = s.replace(/\+/g, " "); // en path params, '+' suele llegar literal
     return s.trim();
 };
 
 // Helper para armar SQL tolerante con opción LIKE
-const buildSql = (vista, like) => like
-    ? `SELECT * FROM ${vista}
-     WHERE proyecto LIKE CONCAT('%', TRIM(?), '%') COLLATE utf8mb4_general_ci`
-    : `SELECT * FROM ${vista}
-     WHERE TRIM(proyecto) = TRIM(?) COLLATE utf8mb4_general_ci`;
+const buildSql = (vista, like) =>
+    like
+        ? `SELECT * FROM ${vista}
+       WHERE proyecto LIKE CONCAT('%', TRIM(?), '%') COLLATE utf8mb4_general_ci`
+        : `SELECT * FROM ${vista}
+       WHERE TRIM(proyecto) = TRIM(?) COLLATE utf8mb4_general_ci`;
 
+/* ======================================
+   Crear sólo proyecto (endpoint simple)
+   ====================================== */
 export const createProyecto = async (req, res) => {
     const {
         nombre,
         descripcion,
         fecha_inicio,
         fecha_fin,
-        responsable_id, // 👈 viene desde el body
+        responsable,     // 👈 texto libre
+        responsable_id,  // 👈 FK a usuarios
         estado,
     } = req.body;
 
@@ -37,16 +45,17 @@ export const createProyecto = async (req, res) => {
         const [result] = await pool.query(
             `
       INSERT INTO proyectos
-        (nombre, descripcion, fecha_inicio, fecha_fin, responsable_id, estado)
-      VALUES (?, ?, ?, ?, ?, ?)
+        (nombre, descripcion, fecha_inicio, fecha_fin, responsable, responsable_id, estado)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
             [
                 nombre,
                 descripcion,
                 fecha_inicio || null,
                 fecha_fin || null,
-                responsable_id || null,       // 👈 FK al usuario responsable
-                estado || "En análisis",      // valor por defecto coherente con la BD
+                responsable || null,
+                responsable_id || null,
+                estado || "En análisis",
             ]
         );
 
@@ -57,12 +66,17 @@ export const createProyecto = async (req, res) => {
     }
 };
 
+/* =========================
+   Crear activos
+   ========================= */
 export const createActivos = async (req, res) => {
-    const { id } = req.params;        // id del proyecto
-    const activos = req.body;         // array de activos
+    const { id } = req.params; // id del proyecto
+    const activos = req.body; // array de activos
 
     if (!Array.isArray(activos) || activos.length === 0) {
-        return res.status(400).json({ error: "Debes enviar al menos un activo" });
+        return res
+            .status(400)
+            .json({ error: "Debes enviar al menos un activo" });
     }
 
     try {
@@ -77,7 +91,7 @@ export const createActivos = async (req, res) => {
         for (const a of activos) {
             await pool.query(sql, [
                 id,
-                a.nombre || a.activo,          // admitimos "nombre" o "activo"
+                a.nombre || a.activo, // admitimos "nombre" o "activo"
                 a.descripcion || null,
                 a.tipo_activo || null,
                 Number(a.valor_confidencialidad ?? 0),
@@ -88,19 +102,26 @@ export const createActivos = async (req, res) => {
             ]);
         }
 
-        res.status(201).json({ ok: true, mensaje: "Activos registrados correctamente" });
+        res
+            .status(201)
+            .json({ ok: true, mensaje: "Activos registrados correctamente" });
     } catch (err) {
         console.error("[createActivos]", err);
         res.status(500).json({ error: "Error registrando activos" });
     }
 };
 
+/* =========================
+   Crear riesgos
+   ========================= */
 export const createRiesgos = async (req, res) => {
-    const { id } = req.params;    // id del proyecto
+    const { id } = req.params; // id del proyecto
     const riesgos = req.body;
 
     if (!Array.isArray(riesgos) || riesgos.length === 0) {
-        return res.status(400).json({ error: "Debes enviar al menos un riesgo" });
+        return res
+            .status(400)
+            .json({ error: "Debes enviar al menos un riesgo" });
     }
 
     try {
@@ -127,7 +148,9 @@ export const createRiesgos = async (req, res) => {
             }
 
             if (!activoId) {
-                throw new Error(`No se encontró activo para el riesgo '${r.nombre}'`);
+                throw new Error(
+                    `No se encontró activo para el riesgo '${r.nombre}'`
+                );
             }
 
             await pool.query(sql, [
@@ -145,16 +168,21 @@ export const createRiesgos = async (req, res) => {
             ]);
         }
 
-        res.status(201).json({ ok: true, mensaje: "Riesgos registrados correctamente" });
+        res
+            .status(201)
+            .json({ ok: true, mensaje: "Riesgos registrados correctamente" });
     } catch (err) {
         console.error("[createRiesgos]", err);
         res.status(500).json({ error: "Error registrando riesgos" });
     }
 };
 
+/* =========================
+   Crear mapa de riesgos
+   ========================= */
 export const createMapaRiesgos = async (req, res) => {
-    const { id } = req.params;      // proyecto_id
-    const entradas = req.body;      // array
+    const { id } = req.params; // proyecto_id
+    const entradas = req.body; // array
 
     if (!Array.isArray(entradas) || entradas.length === 0) {
         return res.status(400).json({
@@ -232,22 +260,28 @@ export const createMapaRiesgos = async (req, res) => {
             }
         }
 
-        res
-            .status(201)
-            .json({ ok: true, mensaje: "Mapa de riesgos registrado correctamente" });
+        res.status(201).json({
+            ok: true,
+            mensaje: "Mapa de riesgos registrado correctamente",
+        });
     } catch (err) {
         console.error("[createMapaRiesgos]", err);
         res.status(500).json({ error: "Error registrando mapa de riesgos" });
     }
 };
 
+/* ======================================
+   Crear proyecto completo (transacción)
+   ====================================== */
 export const createProyectoCompleto = async (req, res) => {
-    const { proyecto, modeloDeValor, matrizDeRiesgo, mapaDeRiesgos } = req.body || {};
+    const { proyecto, modeloDeValor, matrizDeRiesgo, mapaDeRiesgos } =
+        req.body || {};
 
     // === Validaciones básicas ===
     if (!proyecto || !proyecto.nombre || !proyecto.descripcion) {
         return res.status(400).json({
-            error: "Faltan datos del proyecto (nombre y descripción son obligatorios)",
+            error:
+                "Faltan datos del proyecto (nombre y descripción son obligatorios)",
         });
     }
 
@@ -264,20 +298,22 @@ export const createProyectoCompleto = async (req, res) => {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
-        // 1) Insertar proyecto (usar responsable_id como en la BD)
+        // 1) Insertar proyecto (usar responsable y responsable_id como en la BD)
         const responsableId = proyecto.responsable_id ?? null;
+        const responsableTexto = proyecto.responsable || null;
 
         const [projResult] = await conn.query(
             `
       INSERT INTO proyectos
-        (nombre, descripcion, fecha_inicio, fecha_fin, responsable_id, estado)
-      VALUES (?, ?, ?, ?, ?, ?)
+        (nombre, descripcion, fecha_inicio, fecha_fin, responsable, responsable_id, estado)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
             [
                 proyecto.nombre,
                 proyecto.descripcion,
                 proyecto.fecha_inicio || null,
                 proyecto.fecha_fin || null,
+                responsableTexto,
                 responsableId,
                 estado,
             ]
@@ -323,8 +359,10 @@ export const createProyectoCompleto = async (req, res) => {
 
             for (const r of matrizDeRiesgo) {
                 const nombreActivo = r.activo;
-                // si en el frontend no se tiene nombre de riesgo, se puede generar uno:
-                const nombreRiesgo = r.nombre || r.riesgo || `Riesgo sobre ${nombreActivo || "activo"}`;
+                const nombreRiesgo =
+                    r.nombre ||
+                    r.riesgo ||
+                    `Riesgo sobre ${nombreActivo || "activo"}`;
                 if (!nombreActivo) continue;
 
                 // Resolver activo_id por nombre dentro del proyecto
@@ -337,7 +375,6 @@ export const createProyectoCompleto = async (req, res) => {
                     throw new Error(
                         `[createProyectoCompleto] No se encontró activo '${nombreActivo}' para el riesgo '${nombreRiesgo}' en proyecto ${proyectoId}`
                     );
-                    continue;
                 }
 
                 const activoId = actRows[0].id;
@@ -396,9 +433,12 @@ export const createProyectoCompleto = async (req, res) => {
                 // 4.3) Amenazas
                 const amenazas = Array.isArray(e.amenazas)
                     ? e.amenazas
-                    : (e.amenazas
-                        ? e.amenazas.split(",").map((s) => s.trim()).filter(Boolean)
-                        : []);
+                    : e.amenazas
+                        ? e.amenazas
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean)
+                        : [];
 
                 for (const nombreAm of amenazas) {
                     if (!nombreAm) continue;
@@ -427,9 +467,12 @@ export const createProyectoCompleto = async (req, res) => {
                 // 4.4) Vulnerabilidades
                 const vulnerabilidades = Array.isArray(e.vulnerabilidades)
                     ? e.vulnerabilidades
-                    : (e.vulnerabilidades
-                        ? e.vulnerabilidades.split(",").map((s) => s.trim()).filter(Boolean)
-                        : []);
+                    : e.vulnerabilidades
+                        ? e.vulnerabilidades
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean)
+                        : [];
 
                 for (const nombreV of vulnerabilidades) {
                     if (!nombreV) continue;
@@ -463,7 +506,8 @@ export const createProyectoCompleto = async (req, res) => {
         return res.status(201).json({
             ok: true,
             proyecto_id: proyectoId,
-            mensaje: "Proyecto y análisis de riesgos guardados correctamente",
+            mensaje:
+                "Proyecto y análisis de riesgos guardados correctamente",
         });
     } catch (err) {
         if (conn) {
@@ -481,6 +525,9 @@ export const createProyectoCompleto = async (req, res) => {
     }
 };
 
+/* =========================
+   Consultas de vistas
+   ========================= */
 export const getModeloDeValor = async (req, res) => {
     try {
         const nombre = getNombre(req);
@@ -520,20 +567,27 @@ export const getMapaDeRiesgos = async (req, res) => {
     }
 };
 
+/* =========================
+   Listar proyectos
+   ========================= */
 export const listProyectos = async (req, res) => {
     try {
         const [rows] = await pool.query(
             `
       SELECT
-        id,
-        nombre,
-        descripcion,
-        fecha_inicio,
-        fecha_fin,
-        responsable_id,
-        estado
-      FROM proyectos
-      ORDER BY id DESC
+        p.id,
+        p.nombre,
+        p.descripcion,
+        p.fecha_inicio,
+        p.fecha_fin,
+        p.responsable,
+        p.responsable_id,
+        p.estado,
+        u.nombre_completo AS responsable_nombre
+      FROM proyectos AS p
+      LEFT JOIN usuarios AS u
+        ON p.responsable_id = u.id
+      ORDER BY p.id DESC
       `
         );
 

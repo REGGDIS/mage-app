@@ -15,6 +15,22 @@ const formatDate = (value) => {
   }
 };
 
+// Decide qué mostrar en la columna Responsable
+const getResponsableTexto = (p) => {
+  // 1) Texto libre guardado en la columna proyectos.responsable
+  if (p.responsable && p.responsable.trim() !== "") return p.responsable;
+
+  // 2) Nombre del usuario (JOIN con tabla usuarios)
+  if (p.responsable_nombre && p.responsable_nombre.trim() !== "")
+    return p.responsable_nombre;
+
+  // 3) Fallback: ID del usuario
+  if (p.responsable_id != null) return `Usuario #${p.responsable_id}`;
+
+  // 4) Sin responsable
+  return "-";
+};
+
 const ProjectsListPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -120,7 +136,7 @@ const ProjectsListPage = () => {
                 <th>Estado</th>
                 <th>Fecha inicio</th>
                 <th>Fecha fin</th>
-                <th>Responsable (ID)</th>
+                <th>Responsable</th>
                 <th style={{ width: "150px" }}>Acciones</th>
               </tr>
             </thead>
@@ -132,7 +148,7 @@ const ProjectsListPage = () => {
                   <td>{p.estado}</td>
                   <td>{formatDate(p.fecha_inicio)}</td>
                   <td>{formatDate(p.fecha_fin)}</td>
-                  <td>{p.responsable_id ?? "-"}</td>
+                  <td>{getResponsableTexto(p)}</td>
                   <td>
                     <button
                       className="btn btn-sm btn-outline-secondary"

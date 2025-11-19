@@ -32,7 +32,7 @@ const emptyMapa = () => ({
 
 const NewProjectPage = () => {
   const { user } = useAuth();
-  const { enhance, loadingMistral } = useMistralEnhancer(); // 👈 hook de Mistral
+  const { enhance, loadingMistral } = useMistralEnhancer(); // hook de Mistral
 
   const isSuperAdmin = user?.roleName === "SuperAdmin";
   const isGestor = user?.roleName === "Gestor de Riesgos";
@@ -151,6 +151,11 @@ const NewProjectPage = () => {
       return;
     }
 
+    if (!proyecto.responsable.trim()) {
+      setMensajeError("El proyecto debe tener un responsable.");
+      return;
+    }
+
     const activosValidos = activos.filter((a) => a.activo.trim() !== "");
     if (activosValidos.length === 0) {
       setMensajeError(
@@ -167,10 +172,12 @@ const NewProjectPage = () => {
         m.vulnerabilidades.trim() !== ""
     );
 
-    // 👉 Aquí inyectamos el responsable_id para la BD
+    // Aquí inyectamos el responsable_id para la BD
+    // - Gestor: queda asignado como responsable interno (FK a usuarios)
+    // - SuperAdmin: por ahora NO asigna responsable_id (sólo texto libre)
     const proyectoPayload = {
       ...proyecto,
-      responsable_id: isGestor ? user.id : null, // SuperAdmin puede reasignar después
+      responsable_id: isGestor ? user.id : null,
     };
 
     const payload = {
@@ -241,14 +248,15 @@ const NewProjectPage = () => {
               />
             </div>
             <div className="col-md-6">
-              <label className="form-label">Responsable</label>
+              <label className="form-label">Responsable *</label>
               <input
                 type="text"
                 name="responsable"
                 className="form-control"
                 value={proyecto.responsable}
                 onChange={handleProyectoChange}
-                placeholder="Ej: Área de TI"
+                placeholder="Ej: Ana Responsable de Riesgos"
+                required
               />
             </div>
 

@@ -1,48 +1,46 @@
 # MageApp – Frontend (React + Vite + Bootstrap)
 
-Frontend de la aplicación de **Gestión de Riesgos MageApp**, que consume el backend en Node.js / MySQL.
+Frontend de la aplicación de **Gestión de Riesgos MageApp**, que consume el backend en Node.js/Express + MySQL.
 
-Este módulo implementa:
+Incluye:
 
-- Pantalla de **login** con autenticación JWT.
-- Layout con **navbar** y rutas protegidas.
-- Tablas para visualizar:
+- Login con JWT.
+- Navbar con rutas protegidas.
+- Listado y detalle de proyectos de gestión de riesgos.
+- Tablas para:
   - **Modelo de Valor (CIDAT)**
   - **Matriz de Riesgo**
   - **Mapa de Riesgos**
+- Integración opcional con **IA (Mistral)** para mejorar la descripción del proyecto.
 
 ---
 
-## Tecnologías
+## ⚙️ Tecnologías
 
-- [React](https://react.dev/)
-- [Vite](https://vitejs.dev/)
-- [React Router DOM](https://reactrouter.com/)
-- [Axios](https://axios-http.com/)
-- [Bootstrap 5](https://getbootstrap.com/)
+- React + Vite
+- React Router DOM
+- Axios
+- Bootstrap 5
 
 ---
 
-## Requisitos
+## 🔧 Requisitos
 
 - Node.js 18+
 - Backend de MageApp corriendo en:
 
-`http://localhost:4000`
+```txt
+http://localhost:4000
+(Ver carpeta mageapp-backend para levantar la API).
 
-(Ver carpeta `mageapp-backend` del repo para levantar la API).
+🚀 Instalación y scripts
+Desde la carpeta raíz del repo (mageapp/):
 
----
-
-## Instalación
-
-Desde la carpeta raíz del proyecto (`mageapp/`):
-
-```bash
+bash
+Copiar código
 cd mageapp-frontend
 npm install
-Scripts disponibles
-En la carpeta mageapp-frontend:
+Scripts disponibles:
 
 bash
 Copiar código
@@ -54,11 +52,12 @@ npm run build
 
 # Previsualizar el build
 npm run preview
-Por defecto, el servidor de desarrollo se levanta en:
+Por defecto el frontend se sirve en:
 
+txt
+Copiar código
 http://localhost:5173
-
-Configuración de la API
+🌐 Configuración de la API
 Las peticiones HTTP se centralizan en src/services/apiClient.js:
 
 js
@@ -66,131 +65,100 @@ Copiar código
 const apiClient = axios.create({
   baseURL: "http://localhost:4000",
 });
-Si el backend corre en otra URL/puerto, actualizar baseURL en ese archivo (o adaptar para usar una variable de entorno Vite VITE_API_BASE_URL).
+Si el backend corre en otra URL/puerto, actualiza baseURL o adapta el archivo para leer una variable de entorno Vite, por ejemplo:
 
-Autenticación
-Flujo
-El usuario ingresa a /login.
-
-El formulario envía un POST a:
-
-POST /api/auth/login
-
-El backend responde con:
-
-json
+env
 Copiar código
-{
-  "accessToken": "<JWT>",
-  "refreshToken": "<token_refresh>"
-}
-El frontend guarda:
+VITE_API_BASE_URL="http://localhost:4000"
+y luego usar import.meta.env.VITE_API_BASE_URL en apiClient.js.
 
-accessToken en localStorage bajo la clave mageapp_accessToken.
+🤖 Integración de IA (Mistral)
+En el formulario “Nuevo Proyecto de Gestión de Riesgos” (src/pages/NewProjectPage.jsx) hay un botón junto al campo Descripción que permite mejorar automáticamente el texto usando el modelo mistral-large-latest de Mistral:
 
-refreshToken en localStorage bajo la clave mageapp_refreshToken (para uso futuro).
+Llama al servicio src/services/mistralService.js.
 
-Axios añade automáticamente el header:
+Usa el hook src/hooks/useMistralEnhancer.js para manejar:
 
-Authorization: Bearer <accessToken>
+Estado de carga (loadingMistral).
 
-en cada request, gracias al interceptor definido en src/services/apiClient.js.
+Llamada a la API.
 
-Si el backend responde 401, el interceptor:
+Fallback en caso de error (se deja el texto original).
 
-Borra los tokens de localStorage.
+Variables de entorno para la IA
+En la raíz de mageapp-frontend se utiliza un archivo .env.local (no se sube al repo) con:
 
-Redirige a /login.
+env
+Copiar código
+# URL base del backend (si se desea parametrizar)
+VITE_API_BASE_URL="http://localhost:4000"
 
-Rutas protegidas
-Se utiliza:
+# API Key de Mistral (NO subir jamás a GitHub)
+VITE_MISTRAL_API_KEY="tu_api_key_de_mistral_aquí"
+El servicio mistralService.js lee la API Key desde import.meta.env.VITE_MISTRAL_API_KEY.
+Si la variable no está definida o la llamada falla, simplemente se devuelve el texto original.
 
-Un contexto de autenticación: src/context/AuthContext.jsx.
+Importante: asegúrate de que .env.local esté en .gitignore.
 
-Un hook: src/hooks/useAuth.js.
+🔐 Autenticación y roles
+Login en /login (src/pages/LoginPage.jsx).
 
-Un componente de protección: src/components/ProtectedRoute.jsx.
+Contexto de autenticación: src/context/AuthContext.jsx.
 
-Cualquier ruta debajo de /app/* está protegida y redirige a /login si no existe token.
+Hook: src/hooks/useAuth.js.
 
-Rutas del frontend
-/login
-Pantalla de inicio de sesión.
-Archivo: src/pages/LoginPage.jsx.
+Rutas protegidas bajo /app/* mediante src/components/ProtectedRoute.jsx.
 
-/app/modelo-valor
-Tabla de Modelo de Valor (CIDAT).
-Archivo: src/pages/ModeloValorPage.jsx.
+Roles principales (campo roleName):
 
-/app/matriz-riesgo
-Matriz de Riesgo (niveles inherente / residual y tratamiento).
-Archivo: src/pages/MatrizRiesgoPage.jsx.
+SuperAdmin
 
-/app/mapa-riesgos
-Mapa de Riesgos (activos, amenazas, vulnerabilidades).
-Archivo: src/pages/MapaRiesgosPage.jsx.
+Gestor de Riesgos
 
-La definición de rutas está en src/App.jsx.
+Auditor (lector)
 
-Consumo del backend
-Todas las páginas usan un servicio centralizado en:
+La navbar (src/components/NavbarApp.jsx) muestra menú y permisos según el rol, e incluye un saludo del tipo:
 
-src/services/proyectosService.js
-
-Nombre de proyecto usado por defecto:
-
-Aplicación propia - MageApp
-
-Endpoints consumidos:
-
-Modelo de Valor:
-
-GET /api/proyectos/:nombre/modelodevalor?like=1
-
-Matriz de Riesgo:
-
-GET /api/proyectos/:nombre/matrizderiesgo?like=1
-
-Mapa de Riesgos:
-
-GET /api/proyectos/:nombre/mapaderiesgos?like=1
-
-El nombre del proyecto se codifica con encodeURIComponent antes de construir la URL.
-
-Estructura de carpetas (resumen)
+txt
+Copiar código
+Bienvenido, Admin
+Bienvenido, Gestor de Riesgos
+Bienvenido, Auditor
+📁 Estructura resumida
 txt
 Copiar código
 mageapp-frontend/
-  public/
   src/
     components/
-      ErrorAlert.jsx
-      LoadingSpinner.jsx
       NavbarApp.jsx
       ProtectedRoute.jsx
+      ErrorAlert.jsx
+      LoadingSpinner.jsx
     context/
       AuthContext.jsx
     hooks/
       useAuth.js
+      useMistralEnhancer.js
     layouts/
       AppLayout.jsx
     pages/
       LoginPage.jsx
+      ProjectsListPage.jsx
+      NewProjectPage.jsx
       ModeloValorPage.jsx
       MatrizRiesgoPage.jsx
       MapaRiesgosPage.jsx
+      ProjectDetailPage.jsx
     services/
       apiClient.js
       proyectosService.js
+      mistralService.js
     App.jsx
     main.jsx
-  package.json
-  vite.config.js
-  README.md
-Notas
-No se implementa todavía refresh automático del token de acceso.
-Si el accessToken expira, el usuario debe volver a iniciar sesión.
+📝 Notas
+Aún no se implementa refresco automático del token de acceso; si expira, el usuario debe volver a iniciar sesión.
 
-El estilo se basa en Bootstrap 5 con componentes básicos (.container, .navbar, .table, etc.).
-Se puede extender fácilmente para gráficos o dashboards más avanzados.
+El diseño usa Bootstrap 5 y está pensado para ser extendido con gráficos o dashboards en el futuro.
+
+La integración de IA es opcional: la app funciona sin Mistral si no se configura VITE_MISTRAL_API_KEY.
 ```
