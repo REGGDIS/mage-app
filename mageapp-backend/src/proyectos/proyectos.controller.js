@@ -597,3 +597,184 @@ export const listProyectos = async (req, res) => {
         res.status(500).json({ error: "Error obteniendo lista de proyectos" });
     }
 };
+
+/* =========================
+   Plan de Tratamiento / Salvaguardas por proyecto
+   ========================= */
+export const getPlanTratamientoByProyecto = async (req, res) => {
+    const { id } = req.params; // id del proyecto
+
+    try {
+        const sql = `
+      SELECT
+        r.id                         AS riesgo_id,
+        r.nombre                     AS riesgo_nombre,
+        r.res_nivel                  AS nivel_residual,
+
+        c.id                         AS control_id,
+        c.nombre                     AS control_nombre,
+        c.iso_27001_ref              AS control_codigo,
+        c.iso_27001_ref              AS norma,          -- usamos la ref ISO como "norma"
+
+        pt.accion                    AS accion,
+        pt.fecha_inicio              AS fecha_inicio,
+        pt.fecha_fin                 AS plazo,
+        pt.estado                    AS estado,
+        pt.evidencia_url             AS evidencia_url,
+
+        rc.estado                    AS estado_control,
+        rc.efectividad               AS efectividad_control,
+
+        COALESCE(u.nombre_completo, p.responsable) AS responsable
+      FROM riesgos r
+      INNER JOIN proyectos p
+        ON p.id = r.proyecto_id
+      LEFT JOIN riesgo_control rc
+        ON rc.riesgo_id = r.id
+      LEFT JOIN controles c
+        ON c.id = rc.control_id
+      LEFT JOIN plan_tratamiento pt
+        ON pt.riesgo_id = r.id
+        AND (pt.control_id = c.id OR pt.control_id IS NULL)
+      LEFT JOIN usuarios u
+        ON u.id = pt.responsable_id
+      WHERE r.proyecto_id = ?
+      ORDER BY r.id, c.id, pt.id
+      `;
+
+        const [rows] = await pool.query(sql, [id]);
+
+        // Devolvemos directamente las filas, ya con alias entendibles para el frontend
+        res.json(rows);
+    } catch (err) {
+        console.error("[getPlanTratamientoByProyecto]", err);
+        res
+            .status(500)
+            .json({ error: "Error obteniendo el plan de tratamiento" });
+    }
+};
+
+/* =========================
+   Catálogo de controles (salvaguardas)
+   ========================= */
+export const listControles = async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            `
+      SELECT
+        id,
+        nombre,
+        descripcion,
+        categoria,
+        iso_27001_ref
+      FROM controles
+      ORDER BY nombre ASC
+      `
+        );
+
+        res.json(rows);
+    } catch (err) {
+        console.error("[listControles]", err);
+        res.status(500).json({ error: "Error obteniendo catálogo de controles" });
+    }
+};
+
+/* =========================
+   Añadir salvaguarda a un riesgo de un proyecto
+   (riesgo_control + plan_tratamiento)
+   ========================= */
+export const addSalvaguardaToRiesgo = async (req, res) => {
+    const { proyectoId, riesgoId } = req.params;
+
+    const {
+        control_id,
+        efectividad_control,
+        estado_control,
+        accion,
+        fecha_inicio,
+        fecha_fin,
+        estado_plan,
+    } = req.body || {};
+
+    if (!control_id) {
+        return res
+            .status(400)
+            .json({ error: "Debes indicar un control_id para la salvaguarda" });
+    }
+
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        // 1) Validar que el riesgo existe y pertenece al proyecto
+        const [riesRows] = await conn.query(
+            "SELECT id FROM riesgos WHERE id = ? AND proyecto_id = ? LIMIT 1",
+            [riesgoId, proyectoId]
+        );
+
+        if (!riesRows.length) {
+            await conn.rollback();
+            return res
+                .status(404)
+                .json({ error: "No se encontró el riesgo para ese proyecto" });
+        }
+
+        // 2) Insertar / actualizar relación riesgo_control
+        await conn.query(
+            `
+      INSERT INTO riesgo_control (riesgo_id, control_id, efectividad, estado)
+      VALUES (?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        efectividad = VALUES(efectividad),
+        estado = VALUES(estado)
+      `,
+            [
+                riesgoId,
+                control_id,
+                efectividad_control != null ? Number(efectividad_control) : null,
+                estado_control || "Propuesto",
+            ]
+        );
+
+        // 3) Insertar una entrada en plan_tratamiento
+        const [ptResult] = await conn.query(
+            `
+      INSERT INTO plan_tratamiento
+        (riesgo_id, accion, control_id, responsable_id, fecha_inicio, fecha_fin, estado)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+            [
+                riesgoId,
+                accion || null,
+                control_id,
+                null, // responsable_id (opcional: usamos el responsable del proyecto como fallback)
+                fecha_inicio || null,
+                fecha_fin || null,
+                estado_plan || "Pendiente",
+            ]
+        );
+
+        await conn.commit();
+
+        res.status(201).json({
+            ok: true,
+            mensaje: "Salvaguarda registrada correctamente",
+            riesgo_id: Number(riesgoId),
+            control_id: Number(control_id),
+            plan_tratamiento_id: ptResult.insertId,
+        });
+    } catch (err) {
+        if (conn) {
+            try {
+                await conn.rollback();
+            } catch (_) { }
+        }
+        console.error("[addSalvaguardaToRiesgo]", err);
+        res
+            .status(500)
+            .json({ error: "Error registrando salvaguarda para el riesgo" });
+    } finally {
+        if (conn) conn.release();
+    }
+};

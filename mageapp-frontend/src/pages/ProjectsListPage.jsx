@@ -90,6 +90,11 @@ const ProjectsListPage = () => {
     navigate(`/app/proyectos/${encoded}`);
   };
 
+  // 👇 Nuevo handler para el plan de tratamiento
+  const handleVerPlanTratamiento = (proyectoId) => {
+    navigate(`/app/proyectos/${proyectoId}/plan-tratamiento`);
+  };
+
   return (
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -137,7 +142,7 @@ const ProjectsListPage = () => {
                 <th>Fecha inicio</th>
                 <th>Fecha fin</th>
                 <th>Responsable</th>
-                <th style={{ width: "150px" }}>Acciones</th>
+                <th style={{ width: "230px" }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -150,12 +155,20 @@ const ProjectsListPage = () => {
                   <td>{formatDate(p.fecha_fin)}</td>
                   <td>{getResponsableTexto(p)}</td>
                   <td>
-                    <button
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => handleVerAnalisis(p.nombre)}
-                    >
-                      Ver análisis
-                    </button>
+                    <div className="btn-group" role="group">
+                      <button
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => handleVerAnalisis(p.nombre)}
+                      >
+                        Ver análisis
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => handleVerPlanTratamiento(p.id)}
+                      >
+                        Plan de tratamiento
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -92,3 +92,38 @@ export const obtenerMapaDeRiesgosPorProyecto = (nombreProyecto) => {
     const encoded = encodeURIComponent(nombreProyecto);
     return apiClient.get(`/api/proyectos/${encoded}/mapaderiesgos`);
 };
+
+/* =========================
+   LECTURA – PLAN DE TRATAMIENTO / SALVAGUARDAS
+   ========================= */
+
+// GET /api/proyectos/:id/salvaguardas
+export const obtenerPlanTratamientoPorProyecto = async (proyectoId) => {
+    const response = await apiClient.get(
+        `/api/proyectos/${proyectoId}/salvaguardas`
+    );
+    return response.data;
+};
+
+/* =========================
+   Catálogo de controles y alta de salvaguardas
+   ========================= */
+
+// GET /api/proyectos/controles/catalogo
+export const listarControles = async () => {
+    const response = await apiClient.get("/api/proyectos/controles/catalogo");
+    return response.data;
+};
+
+// POST /api/proyectos/:proyectoId/riesgos/:riesgoId/salvaguardas
+export const agregarSalvaguardaARiesgo = async (
+    proyectoId,
+    riesgoId,
+    payload
+) => {
+    const response = await apiClient.post(
+        `/api/proyectos/${proyectoId}/riesgos/${riesgoId}/salvaguardas`,
+        payload
+    );
+    return response.data;
+};

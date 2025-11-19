@@ -10,6 +10,9 @@ import {
     createMapaRiesgos,
     createProyectoCompleto,
     listProyectos,
+    getPlanTratamientoByProyecto,
+    listControles,
+    addSalvaguardaToRiesgo,
 } from "./proyectos.controller.js";
 
 const r = Router();
@@ -24,6 +27,19 @@ r.post("/:id/mapa-riesgos", requireAuth, createMapaRiesgos);
 
 // ENDPOINT COMPLETO (proyecto + activos + matriz + mapa)
 r.post("/completo", requireAuth, createProyectoCompleto);
+
+// Catalogo de controles (salvaguardas)
+r.get("/controles/catalogo", requireAuth, listControles);
+
+// PLAN DE TRATAMIENTO / SALVAGUARDAS (solo lectura)
+r.get("/:id/salvaguardas", requireAuth, getPlanTratamientoByProyecto);
+
+// Añadir salvaguarda a un riesgo de un proyecto
+r.post(
+    "/:proyectoId/riesgos/:riesgoId/salvaguardas",
+    requireAuth,
+    addSalvaguardaToRiesgo
+);
 
 // Endpoints de consulta existentes
 r.get("/:nombre/modelodevalor", requireAuth, getModeloDeValor);

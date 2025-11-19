@@ -9,6 +9,7 @@ import MapaRiesgosPage from "./pages/MapaRiesgosPage.jsx";
 import NewProjectPage from "./pages/NewProjectPage.jsx";
 import ProjectsListPage from "./pages/ProjectsListPage.jsx";
 import ProjectDetailPage from "./pages/ProjectDetailPage.jsx";
+import PlanTratamientoPage from "./pages/PlanTratamientoPage.jsx";
 
 import AppLayout from "./layouts/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -38,11 +39,16 @@ const App = () => {
         <Route path="proyectos" element={<ProjectsListPage />} />
         <Route path="proyectos/:nombre" element={<ProjectDetailPage />} />
 
+        {/* NUEVA: Plan de tratamiento por ID de proyecto */}
+        <Route
+          path="proyectos/:id/plan-tratamiento"
+          element={<PlanTratamientoPage />}
+        />
+
         {/* Páginas existentes de consulta “global” */}
         <Route path="modelo-valor" element={<ModeloValorPage />} />
         <Route path="matriz-riesgo" element={<MatrizRiesgoPage />} />
         <Route path="mapa-riesgos" element={<MapaRiesgosPage />} />
-        
       </Route>
 
       {/* Cualquier otra ruta redirige a /login */}
