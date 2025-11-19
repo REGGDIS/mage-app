@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { crearProyectoCompleto } from "../services/proyectosService.js";
 import { useAuth } from "../hooks/useAuth.js";
+import { useMistralEnhancer } from "../hooks/useMistralEnhancer.js";
 
 const emptyActivo = () => ({
   activo: "",
@@ -31,6 +32,7 @@ const emptyMapa = () => ({
 
 const NewProjectPage = () => {
   const { user } = useAuth();
+  const { enhance, loadingMistral } = useMistralEnhancer(); // 👈 hook de Mistral
 
   const isSuperAdmin = user?.roleName === "SuperAdmin";
   const isGestor = user?.roleName === "Gestor de Riesgos";
@@ -64,7 +66,8 @@ const NewProjectPage = () => {
         <div className="alert alert-warning">
           No tienes permisos para crear nuevos proyectos de gestión de riesgos.
           <br />
-          Si necesitas registrar un proyecto, contacta con el Gestor de Riesgos o el SuperAdmin.
+          Si necesitas registrar un proyecto, contacta con el Gestor de Riesgos
+          o el SuperAdmin.
         </div>
       </div>
     );
@@ -150,7 +153,9 @@ const NewProjectPage = () => {
 
     const activosValidos = activos.filter((a) => a.activo.trim() !== "");
     if (activosValidos.length === 0) {
-      setMensajeError("Debes ingresar al menos un activo en el modelo de valor.");
+      setMensajeError(
+        "Debes ingresar al menos un activo en el modelo de valor."
+      );
       return;
     }
 
@@ -247,16 +252,42 @@ const NewProjectPage = () => {
               />
             </div>
 
+            {/* Descripción + botón Mistral */}
             <div className="col-md-12">
               <label className="form-label">Descripción *</label>
-              <textarea
-                name="descripcion"
-                className="form-control"
-                rows="3"
-                value={proyecto.descripcion}
-                onChange={handleProyectoChange}
-                required
-              />
+              <div className="input-group">
+                <textarea
+                  name="descripcion"
+                  className="form-control"
+                  rows="3"
+                  value={proyecto.descripcion}
+                  onChange={handleProyectoChange}
+                  required
+                />
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  title="Mejorar descripción con IA"
+                  disabled={loadingMistral || !proyecto.descripcion.trim()}
+                  onClick={async () => {
+                    const nueva = await enhance(
+                      proyecto.descripcion,
+                      "Reescribe esto con lenguaje profesional, claro y conciso, manteniendo el sentido original y sin agregar datos inventados."
+                    );
+                    setProyecto((prev) => ({ ...prev, descripcion: nueva }));
+                  }}
+                >
+                  {loadingMistral ? (
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                  ) : (
+                    <i className="bi bi-stars"></i>
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="col-md-3">
@@ -294,10 +325,6 @@ const NewProjectPage = () => {
             </div>
           </div>
         </div>
-
-        {/* Modelo de Valor CIDAT */}
-        {/* … resto de tu componente tal como lo tienes … */}
-        {/* (activos, riesgos, mapaRiesgos, botón guardar) */}
 
         {/* Modelo de Valor CIDAT */}
         <div className="card mb-4">
@@ -545,7 +572,7 @@ const NewProjectPage = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={loading}
+            disabled={loading || loadingMistral}
           >
             {loading ? "Guardando..." : "Guardar proyecto completo"}
           </button>
