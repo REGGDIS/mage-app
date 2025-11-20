@@ -75,6 +75,11 @@ export const listarProyectos = () => {
     return apiClient.get("/api/proyectos");
 };
 
+// DELETE /api/proyectos/:id
+export const eliminarProyecto = (proyectoId) => {
+    return apiClient.delete(`/api/proyectos/${proyectoId}`);
+};
+
 // GET /api/proyectos/:nombre/modelodevalor
 export const obtenerModeloDeValorPorProyecto = (nombreProyecto) => {
     const encoded = encodeURIComponent(nombreProyecto);

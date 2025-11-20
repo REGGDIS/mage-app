@@ -1,7 +1,7 @@
 // src/pages/ProjectsListPage.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { listarProyectos } from "../services/proyectosService.js";
+import { listarProyectos, eliminarProyecto } from "../services/proyectosService.js";
 import { useAuth } from "../hooks/useAuth.js";
 
 const formatDate = (value) => {
@@ -15,19 +15,11 @@ const formatDate = (value) => {
   }
 };
 
-// Decide qué mostrar en la columna Responsable
 const getResponsableTexto = (p) => {
-  // 1) Texto libre guardado en la columna proyectos.responsable
   if (p.responsable && p.responsable.trim() !== "") return p.responsable;
-
-  // 2) Nombre del usuario (JOIN con tabla usuarios)
   if (p.responsable_nombre && p.responsable_nombre.trim() !== "")
     return p.responsable_nombre;
-
-  // 3) Fallback: ID del usuario
   if (p.responsable_id != null) return `Usuario #${p.responsable_id}`;
-
-  // 4) Sin responsable
   return "-";
 };
 
@@ -39,16 +31,13 @@ const ProjectsListPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // --- Reglas de rol ---
   const isSuperAdmin = user?.roleName === "SuperAdmin";
   const isGestor = user?.roleName === "Gestor de Riesgos";
   const isAuditor = user?.roleName === "Auditor";
 
   const puedeCrear = isSuperAdmin || isGestor;
+  const puedeEliminar = isSuperAdmin;
 
-  // Filtro por rol:
-  // - SuperAdmin y Auditor: ven todos
-  // - Gestor: sólo proyectos donde es responsable + proyectos sin responsable
   const proyectosFiltrados = React.useMemo(() => {
     if (!user) return [];
     if (isSuperAdmin || isAuditor) return proyectos;
@@ -59,7 +48,6 @@ const ProjectsListPage = () => {
       );
     }
 
-    // Otros roles (por si acaso)
     return [];
   }, [proyectos, user, isSuperAdmin, isAuditor, isGestor]);
 
@@ -90,9 +78,24 @@ const ProjectsListPage = () => {
     navigate(`/app/proyectos/${encoded}`);
   };
 
-  // 👇 Nuevo handler para el plan de tratamiento
   const handleVerPlanTratamiento = (proyectoId) => {
     navigate(`/app/proyectos/${proyectoId}/plan-tratamiento`);
+  };
+
+  const handleEliminarProyecto = async (proyecto) => {
+    const ok = window.confirm(
+      `¿Seguro que deseas eliminar el proyecto "${proyecto.nombre}" (ID ${proyecto.id})?\n` +
+        "Esta acción no se puede deshacer."
+    );
+    if (!ok) return;
+
+    try {
+      await eliminarProyecto(proyecto.id);
+      setProyectos((prev) => prev.filter((p) => p.id !== proyecto.id));
+    } catch (err) {
+      console.error("Error eliminando proyecto", err);
+      setError("No se pudo eliminar el proyecto.");
+    }
   };
 
   return (
@@ -142,7 +145,7 @@ const ProjectsListPage = () => {
                 <th>Fecha inicio</th>
                 <th>Fecha fin</th>
                 <th>Responsable</th>
-                <th style={{ width: "230px" }}>Acciones</th>
+                <th style={{ width: "260px" }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -168,6 +171,14 @@ const ProjectsListPage = () => {
                       >
                         Plan de tratamiento
                       </button>
+                      {puedeEliminar && (
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => handleEliminarProyecto(p)}
+                        >
+                          Eliminar
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

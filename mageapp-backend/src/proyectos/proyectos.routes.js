@@ -13,11 +13,15 @@ import {
     getPlanTratamientoByProyecto,
     listControles,
     addSalvaguardaToRiesgo,
+    deleteProyecto,
 } from "./proyectos.controller.js";
 
 const r = Router();
 
 r.get("/", requireAuth, listProyectos);
+
+// Eliminar proyecto
+r.delete("/:id", requireAuth, deleteProyecto);
 
 // NUEVOS ENDPOINTS CRUD BÁSICOS
 r.post("/", requireAuth, createProyecto);

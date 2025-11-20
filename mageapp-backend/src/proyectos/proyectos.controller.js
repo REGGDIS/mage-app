@@ -778,3 +778,36 @@ export const addSalvaguardaToRiesgo = async (req, res) => {
         if (conn) conn.release();
     }
 };
+
+/* =========================
+   Eliminar proyecto
+   ========================= */
+export const deleteProyecto = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const [result] = await pool.query(
+            "DELETE FROM proyectos WHERE id = ?",
+            [id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res
+                .status(404)
+                .json({ error: "No se encontró el proyecto a eliminar" });
+        }
+
+        // Gracias a las FKs con ON DELETE CASCADE, se eliminan también
+        // activos, riesgos, mapa, plan_tratamiento, etc. asociados.
+        return res.json({
+            ok: true,
+            mensaje: "Proyecto eliminado correctamente",
+            proyecto_id: Number(id),
+        });
+    } catch (err) {
+        console.error("[deleteProyecto]", err);
+        return res
+            .status(500)
+            .json({ error: "Error eliminando el proyecto" });
+    }
+};
