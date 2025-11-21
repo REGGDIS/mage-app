@@ -1,3 +1,4 @@
+// src/pages/LoginPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
@@ -20,7 +21,8 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
-      navigate("/app/modelo-valor", { replace: true });
+      // Antes: navigate("/app/modelo-valor", { replace: true });
+      navigate("/app", { replace: true }); // 👈 ahora va al Dashboard
     } catch (err) {
       const msg =
         err.response?.data?.error ||

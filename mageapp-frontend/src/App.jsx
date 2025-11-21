@@ -10,6 +10,7 @@ import NewProjectPage from "./pages/NewProjectPage.jsx";
 import ProjectsListPage from "./pages/ProjectsListPage.jsx";
 import ProjectDetailPage from "./pages/ProjectDetailPage.jsx";
 import PlanTratamientoPage from "./pages/PlanTratamientoPage.jsx";
+import DashboardPage from "./pages/DashboardPage.jsx";
 
 import AppLayout from "./layouts/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -29,8 +30,8 @@ const App = () => {
           </ProtectedRoute>
         }
       >
-        {/* Entrada por defecto: nuevo proyecto */}
-        <Route index element={<Navigate to="nuevo-proyecto" replace />} />
+        {/* Entrada por defecto: Dashboard */}
+        <Route index element={<DashboardPage />} />
 
         {/* Nueva pantalla para crear proyectos */}
         <Route path="nuevo-proyecto" element={<NewProjectPage />} />
@@ -39,7 +40,7 @@ const App = () => {
         <Route path="proyectos" element={<ProjectsListPage />} />
         <Route path="proyectos/:nombre" element={<ProjectDetailPage />} />
 
-        {/* NUEVA: Plan de tratamiento por ID de proyecto */}
+        {/* Plan de tratamiento por ID de proyecto */}
         <Route
           path="proyectos/:id/plan-tratamiento"
           element={<PlanTratamientoPage />}
