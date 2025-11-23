@@ -2,6 +2,8 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
+import "./App.css"; // 👈 IMPORTA TU CSS AQUÍ
+
 import LoginPage from "./pages/LoginPage.jsx";
 import ModeloValorPage from "./pages/ModeloValorPage.jsx";
 import MatrizRiesgoPage from "./pages/MatrizRiesgoPage.jsx";

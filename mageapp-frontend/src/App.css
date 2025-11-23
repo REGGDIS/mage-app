@@ -1,10 +1,12 @@
+/* src/App.css */
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
-  text-align: center;
 }
 
+/* Cosas del template de Vite (opcional) */
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -17,7 +19,6 @@
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
-
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
@@ -26,17 +27,24 @@
     transform: rotate(360deg);
   }
 }
-
 @media (prefers-reduced-motion: no-preference) {
   a:nth-of-type(2) .logo {
     animation: logo-spin infinite 20s linear;
   }
 }
-
 .card {
   padding: 2em;
 }
-
 .read-the-docs {
   color: #888;
+}
+
+/* ===========================
+   IMPRESIÓN
+   Ocultar elementos con .no-print
+   =========================== */
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }

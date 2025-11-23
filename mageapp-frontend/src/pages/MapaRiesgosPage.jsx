@@ -1,3 +1,4 @@
+// src/pages/MapaRiesgosPage.jsx
 import React, { useEffect, useState } from "react";
 import { getMapaDeRiesgos } from "../services/proyectosService.js";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
@@ -17,8 +18,7 @@ const MapaRiesgosPage = () => {
         setData(rows);
       } catch (err) {
         const msg =
-          err.response?.data?.error ||
-          "Error al cargar el Mapa de Riesgos.";
+          err.response?.data?.error || "Error al cargar el Mapa de Riesgos.";
         setError(msg);
       } finally {
         setLoading(false);
@@ -30,10 +30,23 @@ const MapaRiesgosPage = () => {
 
   return (
     <>
-      <h3 className="mb-3">Mapa de Riesgos</h3>
-      <p className="text-muted">
-        Proyecto: <strong>Aplicación propia - MageApp</strong>
-      </p>
+      {/* Cabecera + botón imprimir (no sale en PDF gracias a .no-print) */}
+      <div className="d-flex justify-content-between align-items-center mb-3 no-print">
+        <div>
+          <h3 className="mb-0">Mapa de Riesgos</h3>
+          <p className="text-muted mb-0">
+            Proyecto: <strong>Aplicación propia - MageApp</strong>
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          onClick={() => window.print()}
+        >
+          Imprimir
+        </button>
+      </div>
 
       <ErrorAlert message={error} />
       {loading && <LoadingSpinner />}
