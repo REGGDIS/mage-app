@@ -18,6 +18,54 @@ const formatDate = (value) => {
   }
 };
 
+// Estilo de nivel (1–5) similar a la matriz de riesgo
+const getRiskScaleStyle = (value) => {
+  const n = Number(value);
+  const baseStyle = { textAlign: "center" };
+
+  if (Number.isNaN(n)) return baseStyle;
+
+  let level;
+  if (n <= 1) level = 1;
+  else if (n <= 2) level = 2;
+  else if (n <= 3) level = 3;
+  else if (n <= 4) level = 4;
+  else level = 5;
+
+  const colors = {
+    1: "#198754", // verde (bajo)
+    2: "#6ff261", // verde claro
+    3: "#ffc107", // amarillo
+    4: "#fd7e14", // naranjo
+    5: "#dc3545", // rojo (alto)
+  };
+
+  const textColors = {
+    1: "#ffffff",
+    2: "#0f5132",
+    3: "#664d03",
+    4: "#7c2d12",
+    5: "#ffffff",
+  };
+
+  return {
+    ...baseStyle,
+    backgroundColor: colors[level],
+    color: textColors[level],
+    fontWeight: 600,
+  };
+};
+
+// Clasificación textual del riesgo residual según nivel residual (res_nivel)
+const getResidualLabel = (value) => {
+  const v = Number(value);
+  if (!v || Number.isNaN(v)) return "Sin evaluar";
+
+  if (v <= 2) return "Bajo (Aceptable)";
+  if (v === 3) return "Medio (Seguimiento)";
+  return "Alto (No aceptable)";
+};
+
 const PlanTratamientoPage = () => {
   const { id } = useParams(); // id del proyecto
   const navigate = useNavigate();
@@ -189,6 +237,7 @@ const PlanTratamientoPage = () => {
                   <tr>
                     <th>Riesgo</th>
                     <th>Nivel residual</th>
+                    <th>Riesgo residual</th>
                     <th>Salvaguarda (control)</th>
                     <th>Acción</th>
                     <th>Norma / Referencia</th>
@@ -212,7 +261,10 @@ const PlanTratamientoPage = () => {
                               ? `Riesgo #${item.riesgo_id}`
                               : "-")}
                         </td>
-                        <td>{item.nivel_residual ?? "-"}</td>
+                        <td style={getRiskScaleStyle(item.nivel_residual)}>
+                          {item.nivel_residual ?? "-"}
+                        </td>
+                        <td>{getResidualLabel(item.nivel_residual)}</td>
                         <td>{item.control_nombre || "-"}</td>
                         <td>{item.accion || "-"}</td>
                         <td>{item.norma || item.control_codigo || "-"}</td>
@@ -242,8 +294,9 @@ const PlanTratamientoPage = () => {
 
             <p className="text-muted small mb-0">
               * Esta vista funciona como Plan de Tratamiento: muestra los riesgos,
-              su nivel residual y las salvaguardas (controles) asociados, junto
-              con responsables, plazos y estado.
+              su nivel residual después de aplicar salvaguardas y una
+              clasificación (bajo/medio/alto), junto con responsables, plazos y
+              estado de las acciones.
             </p>
           </div>
         </div>
@@ -283,9 +336,7 @@ const PlanTratamientoPage = () => {
                     {controles.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.nombre}
-                        {c.iso_27001_ref
-                          ? ` (${c.iso_27001_ref})`
-                          : ""}
+                        {c.iso_27001_ref ? ` (${c.iso_27001_ref})` : ""}
                       </option>
                     ))}
                   </select>

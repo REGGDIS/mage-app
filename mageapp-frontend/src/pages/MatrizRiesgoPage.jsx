@@ -19,7 +19,7 @@ const getRiskScaleStyle = (value) => {
   else if (n <= 4) level = 4;
   else level = 5;
 
-  // 🎨 Colores ajustados
+  // 🎨 Colores ajustados (los que ya tenías)
   const colors = {
     1: "#198754", // verde (bajo)
     2: "#6ff261",
@@ -42,6 +42,16 @@ const getRiskScaleStyle = (value) => {
     color: textColors[level],
     fontWeight: 600,
   };
+};
+
+// Clasificación textual del riesgo residual según res_nivel
+const getResidualLabel = (value) => {
+  const v = Number(value);
+  if (!v || Number.isNaN(v)) return "Sin evaluar";
+
+  if (v <= 2) return "Bajo (Aceptable)";
+  if (v === 3) return "Medio (Seguimiento)";
+  return "Alto (No aceptable)";
 };
 
 const MatrizRiesgoPage = () => {
@@ -103,6 +113,7 @@ const MatrizRiesgoPage = () => {
                 <th className="text-center">Prob. Res.</th>
                 <th className="text-center">Impacto Res.</th>
                 <th className="text-center">Nivel Res.</th>
+                <th className="text-center">Riesgo residual</th>
                 <th className="text-center">Tratamiento</th>
               </tr>
             </thead>
@@ -127,6 +138,9 @@ const MatrizRiesgoPage = () => {
                   </td>
                   <td style={getRiskScaleStyle(row.res_nivel)}>
                     {row.res_nivel}
+                  </td>
+                  <td className="text-center">
+                    {getResidualLabel(row.res_nivel)}
                   </td>
                   <td className="text-center">{row.tratamiento}</td>
                 </tr>
